@@ -1,0 +1,19 @@
+server:
+  address: ":8080"
+  mode: "release"
+
+mysql:
+  host: "127.0.0.1"
+  port: 3306
+  user: "root"
+  password: "123456"
+  database: "filestore"
+  max_idle_conns: 10
+  max_open_conns: 100
+  conn_max_lifetime: 3600
+
+auth:
+  token_header: "X-Auth-Token"
+  valid_tokens:
+    - "dev-token-001"
+    - "dev-token-002"
