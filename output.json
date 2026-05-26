@@ -1,0 +1,8 @@
+{
+  "proj_name": "test16",
+  "features": [
+    "Add a file status completion API: After a client has uploaded and registered all chunks, they call this endpoint to mark the file status from 'Uploading' to 'Completed'. The service must verify that the number of registered chunks equals the file's chunk_count before allowing the transition. If verification fails, return a detailed error listing all missing chunk indices. Also update the file's uploaded_at timestamp to the current time upon completion. Use database transactions to ensure the status change is atomic. Add appropriate DTOs for the completion request and response.",
+    "Add a file soft deletion and recovery API: Provide a soft deletion endpoint that changes a file's status to 'Deleted' (status=3). When a file is soft-deleted, cascade the status change to all associated file_chunk records. Support a recovery endpoint that restores a file from 'Deleted' back to 'Uploading' status and restores all associated chunk records to 'Normal' status. Both operations must be wrapped in database transactions to maintain consistency between the file_index and file_chunk tables. Include a force-delete option that permanently removes the file and all its chunk records from the database.",
+    "Add an upload progress tracking API: Provide an endpoint that takes a file_id and returns the number of chunks that have been successfully registered, the total expected chunk_count, a calculated progress percentage, and a sorted list of chunk indices that are still missing. Include the status of each registered chunk (Normal/Corrupt/Migrated) in the response so clients can detect problematic chunks. This enables clients to implement resumable uploads and display upload progress information."
+  ]
+}

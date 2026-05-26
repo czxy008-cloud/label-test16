@@ -75,6 +75,13 @@ func (h *FileHandler) RecordChunk(c *gin.Context) {
 			})
 			return
 		}
+		if errors.Is(err, service.ErrInvalidStatus) || errors.Is(err, service.ErrInvalidChunkInfo) {
+			c.JSON(http.StatusBadRequest, model.Response{
+				Code:    http.StatusBadRequest,
+				Message: err.Error(),
+			})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, model.Response{
 			Code:    http.StatusInternalServerError,
 			Message: "record chunk failed: " + err.Error(),
@@ -142,6 +149,212 @@ func (h *FileHandler) QueryFiles(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, model.Response{
 			Code:    http.StatusInternalServerError,
 			Message: "query files failed: " + err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, model.Response{
+		Code:    http.StatusOK,
+		Message: "success",
+		Data:    resp,
+	})
+}
+
+// GetUploadProgress 获取上传进度接口
+// GET /api/v1/files/:id/progress
+func (h *FileHandler) GetUploadProgress(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, model.Response{
+			Code:    http.StatusBadRequest,
+			Message: "invalid file id",
+		})
+		return
+	}
+
+	resp, err := h.svc.GetUploadProgress(c.Request.Context(), id)
+	if err != nil {
+		if errors.Is(err, service.ErrFileNotFound) {
+			c.JSON(http.StatusNotFound, model.Response{
+				Code:    http.StatusNotFound,
+				Message: err.Error(),
+			})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, model.Response{
+			Code:    http.StatusInternalServerError,
+			Message: "get upload progress failed: " + err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, model.Response{
+		Code:    http.StatusOK,
+		Message: "success",
+		Data:    resp,
+	})
+}
+
+// CompleteFile 完成文件上传接口
+// POST /api/v1/files/complete
+func (h *FileHandler) CompleteFile(c *gin.Context) {
+	var req model.CompleteFileRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, model.Response{
+			Code:    http.StatusBadRequest,
+			Message: "invalid request: " + err.Error(),
+		})
+		return
+	}
+
+	resp, err := h.svc.CompleteFile(c.Request.Context(), req.FileID)
+	if err != nil {
+		if errors.Is(err, service.ErrFileNotFound) {
+			c.JSON(http.StatusNotFound, model.Response{
+				Code:    http.StatusNotFound,
+				Message: err.Error(),
+			})
+			return
+		}
+		if errors.Is(err, service.ErrInvalidStatus) {
+			c.JSON(http.StatusBadRequest, model.Response{
+				Code:    http.StatusBadRequest,
+				Message: err.Error(),
+			})
+			return
+		}
+		if errors.Is(err, service.ErrIncompleteChunks) {
+			c.JSON(http.StatusBadRequest, model.Response{
+				Code:    http.StatusBadRequest,
+				Message: err.Error(),
+			})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, model.Response{
+			Code:    http.StatusInternalServerError,
+			Message: "complete file failed: " + err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, model.Response{
+		Code:    http.StatusOK,
+		Message: "success",
+		Data:    resp,
+	})
+}
+
+// SoftDeleteFile 软删除文件接口
+// POST /api/v1/files/soft-delete
+func (h *FileHandler) SoftDeleteFile(c *gin.Context) {
+	var req model.SoftDeleteFileRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, model.Response{
+			Code:    http.StatusBadRequest,
+			Message: "invalid request: " + err.Error(),
+		})
+		return
+	}
+
+	resp, err := h.svc.SoftDeleteFile(c.Request.Context(), req.FileID)
+	if err != nil {
+		if errors.Is(err, service.ErrFileNotFound) {
+			c.JSON(http.StatusNotFound, model.Response{
+				Code:    http.StatusNotFound,
+				Message: err.Error(),
+			})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, model.Response{
+			Code:    http.StatusInternalServerError,
+			Message: "soft delete file failed: " + err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, model.Response{
+		Code:    http.StatusOK,
+		Message: "success",
+		Data:    resp,
+	})
+}
+
+// RestoreFile 恢复已删除文件接口
+// POST /api/v1/files/restore
+func (h *FileHandler) RestoreFile(c *gin.Context) {
+	var req model.RestoreFileRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, model.Response{
+			Code:    http.StatusBadRequest,
+			Message: "invalid request: " + err.Error(),
+		})
+		return
+	}
+
+	resp, err := h.svc.RestoreFile(c.Request.Context(), req.FileID)
+	if err != nil {
+		if errors.Is(err, service.ErrFileNotFound) {
+			c.JSON(http.StatusNotFound, model.Response{
+				Code:    http.StatusNotFound,
+				Message: err.Error(),
+			})
+			return
+		}
+		if errors.Is(err, service.ErrInvalidStatus) {
+			c.JSON(http.StatusBadRequest, model.Response{
+				Code:    http.StatusBadRequest,
+				Message: err.Error(),
+			})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, model.Response{
+			Code:    http.StatusInternalServerError,
+			Message: "restore file failed: " + err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, model.Response{
+		Code:    http.StatusOK,
+		Message: "success",
+		Data:    resp,
+	})
+}
+
+// DeleteFile 删除文件接口（支持软删除和强制删除）
+// DELETE /api/v1/files/:id
+func (h *FileHandler) DeleteFile(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, model.Response{
+			Code:    http.StatusBadRequest,
+			Message: "invalid file id",
+		})
+		return
+	}
+
+	force := c.Query("force") == "true"
+
+	var resp *model.DeleteFileResponse
+	if force {
+		resp, err = h.svc.ForceDeleteFile(c.Request.Context(), id)
+	} else {
+		resp, err = h.svc.SoftDeleteFile(c.Request.Context(), id)
+	}
+
+	if err != nil {
+		if errors.Is(err, service.ErrFileNotFound) {
+			c.JSON(http.StatusNotFound, model.Response{
+				Code:    http.StatusNotFound,
+				Message: err.Error(),
+			})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, model.Response{
+			Code:    http.StatusInternalServerError,
+			Message: "delete file failed: " + err.Error(),
 		})
 		return
 	}

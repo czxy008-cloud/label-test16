@@ -62,6 +62,74 @@ type ChunkMappingResponse struct {
 	Status     int    `json:"status"`
 }
 
+// ChunkStatusInfo 分片状态信息
+type ChunkStatusInfo struct {
+	ChunkIndex uint32 `json:"chunk_index"`
+	Status     int    `json:"status"`
+	StatusText string `json:"status_text"`
+}
+
+// UploadProgressResponse 上传进度响应
+type UploadProgressResponse struct {
+	FileID         uint64            `json:"file_id"`
+	FileName       string            `json:"file_name"`
+	ChunkCount     uint32            `json:"chunk_count"`
+	Registered     uint32            `json:"registered"`
+	Progress       float64           `json:"progress"`
+	Status         int               `json:"status"`
+	StatusText     string            `json:"status_text"`
+	MissingChunks  []uint32          `json:"missing_chunks"`
+	ChunksStatus   []ChunkStatusInfo `json:"chunks_status"`
+}
+
+// CompleteFileRequest 完成文件上传请求
+type CompleteFileRequest struct {
+	FileID uint64 `json:"file_id" binding:"required"`
+}
+
+// CompleteFileResponse 完成文件上传响应
+type CompleteFileResponse struct {
+	FileID     uint64 `json:"file_id"`
+	FileName   string `json:"file_name"`
+	Status     int    `json:"status"`
+	StatusText string `json:"status_text"`
+	UploadedAt string `json:"uploaded_at"`
+}
+
+// SoftDeleteFileRequest 软删除文件请求
+type SoftDeleteFileRequest struct {
+	FileID uint64 `json:"file_id" binding:"required"`
+}
+
+// RestoreFileRequest 恢复文件请求
+type RestoreFileRequest struct {
+	FileID uint64 `json:"file_id" binding:"required"`
+}
+
+// DeleteFileRequest 删除文件请求（支持软删除和强制删除）
+type DeleteFileRequest struct {
+	FileID  uint64 `json:"file_id" binding:"required"`
+	Force   bool   `json:"force"`
+}
+
+// DeleteFileResponse 删除文件响应
+type DeleteFileResponse struct {
+	FileID     uint64 `json:"file_id"`
+	FileName   string `json:"file_name"`
+	Status     int    `json:"status"`
+	StatusText string `json:"status_text"`
+	Deleted    bool   `json:"deleted"`
+}
+
+// RestoreFileResponse 恢复文件响应
+type RestoreFileResponse struct {
+	FileID     uint64 `json:"file_id"`
+	FileName   string `json:"file_name"`
+	Status     int    `json:"status"`
+	StatusText string `json:"status_text"`
+	Restored   bool   `json:"restored"`
+}
+
 // Response 通用响应结构
 type Response struct {
 	Code    int         `json:"code"`
